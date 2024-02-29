@@ -12,6 +12,8 @@ import java.util.ArrayList;
 
 public class ClientFrame extends JFrame implements KeyEventDispatcher {
     int MAX_PLAYER_CNT = 2;
+    int X_START = 100;
+    int Y_START = 100;
     int SQ_SIZE = 70;
     int OUTLINE_SIZE = 4;
     int FIELD_SIZE = 11 * OUTLINE_SIZE + 10 * SQ_SIZE;
@@ -22,18 +24,39 @@ public class ClientFrame extends JFrame implements KeyEventDispatcher {
     int[][] field = new int[][] {
             {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
             {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
+            {0, 1, 1, 1, 1, 0, 1, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
+            {0, 0, 0, 1, 0, 0, 0, 0, 1, 0},
             {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            {0, 1, 1, 1, 1, 0, 0, 0, 0, 0},
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 1, 1, 0, 0, 0, 0, 0},
             {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
     };
 
     int[] dx = {1, 0, -1, 0};
     int[] dy = {0, 1, 0, -1};
+
+    boolean check(int[][] f) {
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 10; j++) {
+                if (f[i][j] == 0) continue;
+
+                if (j + 1 < 10) {
+                    if (f[i + 1][j + 1] == 1) {
+                        return false;
+                    }
+                }
+
+                if (0 <= j - 1) {
+                    if (f[i + 1][j - 1] == 1) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
 
     ClientFrame(int id, Socket connection, ObjectOutputStream out) throws IOException {
         this.id = id;
@@ -64,11 +87,11 @@ public class ClientFrame extends JFrame implements KeyEventDispatcher {
         g.clearRect(0, 0, getWidth(), getHeight());
 
         g.setColor(new Color(0, 200, 255));
-        g.fillRect(100, 100, FIELD_SIZE, FIELD_SIZE);
+        g.fillRect(X_START, Y_START, FIELD_SIZE, FIELD_SIZE);
         for (int i = 0; i < 10; i++) {
             for (int j = 0; j < 10; j++) {
-                int x = 100 + (i + 1) * OUTLINE_SIZE + i * SQ_SIZE;
-                int y = 100 + (j + 1) * OUTLINE_SIZE + j * SQ_SIZE;
+                int x = X_START + (i + 1) * OUTLINE_SIZE + i * SQ_SIZE;
+                int y = Y_START + (j + 1) * OUTLINE_SIZE + j * SQ_SIZE;
 
                 if (field[j][i] == 1) {
                     g.setColor(new Color(0, 0, 0));
@@ -82,17 +105,17 @@ public class ClientFrame extends JFrame implements KeyEventDispatcher {
         g.setColor(new Color(0, 0, 0));
         for (int i = 0; i < 9; i++) {
             for (int j = 0; j < 9; j++) {
-                if (field[j][i] == 1) continue;
+                if (field[j][i] == 0) continue;
 
-                if (field[j][i + 1] == 1) {
-                    int x = 100 + (i + 1) * OUTLINE_SIZE + (i + 1) * SQ_SIZE;
-                    int y = 100 + (j + 1) * OUTLINE_SIZE + (j + 1) * SQ_SIZE;
+                if (field[j + 1][i] == 1) {
+                    int x = X_START + (i + 1) * OUTLINE_SIZE + i * SQ_SIZE;
+                    int y = Y_START + (j + 1) * OUTLINE_SIZE + (j + 1) * SQ_SIZE;
                     g.fillRect(x, y, SQ_SIZE, OUTLINE_SIZE);
                 }
 
-                if (field[j + 1][i] == 1) {
-                    int x = 100 + (i + 1) * OUTLINE_SIZE + (i + 1) * SQ_SIZE;
-                    int y = 100 + (j + 1) * OUTLINE_SIZE + j * SQ_SIZE;
+                if (field[j][i + 1] == 1) {
+                    int x = X_START + (i + 1) * OUTLINE_SIZE + (i + 1) * SQ_SIZE;
+                    int y = Y_START + (j + 1) * OUTLINE_SIZE + j * SQ_SIZE;
                     g.fillRect(x, y, OUTLINE_SIZE, SQ_SIZE);
                 }
             }

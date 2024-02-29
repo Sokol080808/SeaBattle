@@ -8,11 +8,13 @@ public class Client {
     public static void main(String[] args) throws IOException, ClassNotFoundException {
         Scanner sys_in = new Scanner(System.in);
         String ip;
-        System.out.print("INPUT SERVER IP: ");
-        ip = sys_in.next();
-        int port;
-        System.out.print("INPUT SERVER PORT: ");
-        port = sys_in.nextInt();
+//        System.out.print("INPUT SERVER IP: ");
+//        ip = sys_in.next();
+//        int port;
+//        System.out.print("INPUT SERVER PORT: ");
+//        port = sys_in.nextInt();
+        ip = "localhost";
+        int port = 1239;
 
         Socket connection = new Socket(ip, port);
         ObjectOutputStream out = new ObjectOutputStream(connection.getOutputStream());
