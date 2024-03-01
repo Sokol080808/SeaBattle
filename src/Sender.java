@@ -25,6 +25,7 @@ public class Sender implements Runnable {
 
     @Override
     public void run() {
+        System.out.println("STARTED");
         try {
             out.write(user_id);
             out.flush();
@@ -39,6 +40,7 @@ public class Sender implements Runnable {
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
+        System.out.println("DISCONNECTED");
 
         try {
             client.close();

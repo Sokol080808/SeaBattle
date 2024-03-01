@@ -31,7 +31,11 @@ public class Client {
         }
 
         Thread ShutdownHook = new Thread(() -> {
-
+            try {
+                connection.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         });
         Runtime.getRuntime().addShutdownHook(ShutdownHook);
 

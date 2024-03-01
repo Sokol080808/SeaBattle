@@ -8,7 +8,7 @@ public class Server {
     int MAX_PLAYERS_CNT = 2;
 
     int users_cnt = 0;
-    Sender[] users = new Sender[MAX_PLAYERS_CNT];
+    Sender[] users = new Sender[MAX_PLAYERS_CNT + 1];
 
     void activate() throws IOException, InputMismatchException {
         Scanner in = new Scanner(System.in);
@@ -28,13 +28,12 @@ public class Server {
                     break;
                 }
             }
+            System.out.println("user_id = " + user_id);
 
 
             Sender client = new Sender(socket_to_client, user_id, this);
-            if (user_id < MAX_PLAYERS_CNT) {
-                Thread thread = new Thread(client);
-                thread.start();
-            }
+            Thread thread = new Thread(client);
+            thread.start();
         }
     }
 }
