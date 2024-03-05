@@ -35,6 +35,10 @@ public class Sender implements Runnable {
                 if (input.available() > 0) {
                     Event ev = (Event) in.readObject();
                     send(ev);
+
+                    if (ev.type == Event.DISCONNECTED) {
+                        break;
+                    }
                 }
             }
         } catch (IOException | ClassNotFoundException e) {

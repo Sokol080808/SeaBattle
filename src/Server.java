@@ -30,7 +30,6 @@ public class Server {
             }
             System.out.println("user_id = " + user_id);
 
-
             Sender client = new Sender(socket_to_client, user_id, this);
             Thread thread = new Thread(client);
             thread.start();

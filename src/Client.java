@@ -32,6 +32,9 @@ public class Client {
 
         Thread ShutdownHook = new Thread(() -> {
             try {
+                Event ev = new Event();
+                ev.type = Event.DISCONNECTED;
+                out.writeObject(ev);
                 connection.close();
             } catch (IOException e) {
                 throw new RuntimeException(e);

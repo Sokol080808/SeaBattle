@@ -12,6 +12,9 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 
 public class ClientFrame extends JFrame implements KeyEventDispatcher {
+    boolean game_started = false;
+    boolean move_now = false;
+    boolean disconnected = false;
     int MAX_PLAYER_CNT = 2;
     int X_START = 100;
     int Y_START = 100;
@@ -107,10 +110,6 @@ public class ClientFrame extends JFrame implements KeyEventDispatcher {
         this.setVisible(true);
     }
 
-    void update() throws IOException {
-
-    }
-
     @Override
     public void paint(Graphics g) {
         BufferStrategy bufferStrategy = getBufferStrategy();
@@ -157,19 +156,30 @@ public class ClientFrame extends JFrame implements KeyEventDispatcher {
             }
         }
 
-
-        try {
-            update();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
         g.dispose();
         bufferStrategy.show();
     }
 
-    void update_event(Event e) {
-
+    void update_event(Event e) throws IOException {
+        if (e.type == Event.CONNECTED) {
+            game_started = true;
+        } else if (e.type == Event.DISCONNECTED) {
+            disconnected = true;
+        } else if (e.type == Event.NEXT_MOVE) {
+            move_now = true;
+        } else if (e.type == Event.MOVE) {
+            Event ev = new Event(Event.INFO);
+            int x = e.data.get(0);
+            int y = e.data.get(1);
+            ev.data.add(field[y][x]);
+            out.writeObject(ev);
+        } else if (e.type == Event.INFO) {
+            if (e.data.get(0) == 0) {
+                Event ev = new Event(Event.NEXT_MOVE);
+                ev.data.add(0);
+                out.writeObject(ev);
+            }
+        }
     }
 
     @Override
