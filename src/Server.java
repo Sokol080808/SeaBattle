@@ -2,6 +2,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.InputMismatchException;
+import java.util.Random;
 import java.util.Scanner;
 
 public class Server {
@@ -33,6 +34,14 @@ public class Server {
             Sender client = new Sender(socket_to_client, user_id, this);
             Thread thread = new Thread(client);
             thread.start();
+
+            if (users_cnt == MAX_PLAYERS_CNT) {
+                Random r = new Random();
+                int id = r.nextInt(2);
+                Event ev = new Event(Event.NEXT_MOVE);
+                users[id].out.writeObject(ev);
+                System.out.println(id);
+            }
         }
     }
 }

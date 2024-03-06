@@ -8,6 +8,7 @@ import java.io.*;
 import java.lang.reflect.Field;
 import java.net.Socket;
 import java.net.SocketException;
+import java.sql.SQLOutput;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 
@@ -36,6 +37,19 @@ public class ClientFrame extends JFrame implements KeyEventDispatcher {
             {0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
             {0, 0, 0, 1, 1, 0, 0, 0, 0, 0},
             {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+    };
+
+    int [][] type = new int[][] {
+            {1, 1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {0, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
     };
 
     int[] dx = {1, 0, -1, 0};
@@ -104,6 +118,9 @@ public class ClientFrame extends JFrame implements KeyEventDispatcher {
         this.out = out;
         this.connection = connection;
 
+        Event ev = new Event(Event.CONNECTED);
+        out.writeObject(ev);
+
         this.setSize(1100, 1100);
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         this.setResizable(false);
@@ -121,37 +138,70 @@ public class ClientFrame extends JFrame implements KeyEventDispatcher {
         g = bufferStrategy.getDrawGraphics();
         g.clearRect(0, 0, getWidth(), getHeight());
 
-        g.setColor(new Color(0, 200, 255));
-        g.fillRect(X_START, Y_START, FIELD_SIZE, FIELD_SIZE);
-        for (int i = 0; i < 10; i++) {
-            for (int j = 0; j < 10; j++) {
-                int x = X_START + (i + 1) * OUTLINE_SIZE + i * SQ_SIZE;
-                int y = Y_START + (j + 1) * OUTLINE_SIZE + j * SQ_SIZE;
-
-                if (field[j][i] == 1) {
-                    g.setColor(new Color(0, 0, 0));
-                } else {
-                    g.setColor(new Color(180, 180, 180));
-                }
-                g.fillRect(x, y, SQ_SIZE, SQ_SIZE);
-            }
-        }
-
-        g.setColor(new Color(0, 0, 0));
-        for (int i = 0; i < 9; i++) {
-            for (int j = 0; j < 9; j++) {
-                if (field[j][i] == 0) continue;
-
-                if (field[j + 1][i] == 1) {
+        if (!game_started) {
+            g.setColor(Color.BLACK);
+            g.drawString("Соперник еще не подключился", 500, 500);
+        } else {
+            g.setColor(new Color(0, 200, 255));
+            g.fillRect(X_START, Y_START, FIELD_SIZE, FIELD_SIZE);
+            for (int i = 0; i < 10; i++) {
+                for (int j = 0; j < 10; j++) {
                     int x = X_START + (i + 1) * OUTLINE_SIZE + i * SQ_SIZE;
-                    int y = Y_START + (j + 1) * OUTLINE_SIZE + (j + 1) * SQ_SIZE;
-                    g.fillRect(x, y, SQ_SIZE, OUTLINE_SIZE);
-                }
-
-                if (field[j][i + 1] == 1) {
-                    int x = X_START + (i + 1) * OUTLINE_SIZE + (i + 1) * SQ_SIZE;
                     int y = Y_START + (j + 1) * OUTLINE_SIZE + j * SQ_SIZE;
-                    g.fillRect(x, y, OUTLINE_SIZE, SQ_SIZE);
+
+                    if (type[j][i] == 1) {
+                        g.setColor(new Color(255, 0, 0));
+                    } else if (field[j][i] == 1) {
+                        g.setColor(new Color(0, 0, 0));
+                    } else {
+                        g.setColor(new Color(180, 180, 180));
+                    }
+
+                    g.fillRect(x, y, SQ_SIZE, SQ_SIZE);
+
+                    if (type[j][i] == 0) {
+                        g.setColor(new Color(0, 0, 0));
+                        g.drawLine(x, y, x + SQ_SIZE - 1, y + SQ_SIZE - 1);
+                        g.drawLine(x, y + SQ_SIZE - 1, x + SQ_SIZE - 1, y);
+                    }
+                }
+            }
+
+            g.setColor(new Color(0, 0, 0));
+            for (int i = 0; i < 9; i++) {
+                for (int j = 0; j < 9; j++) {
+                    if (field[j][i] == 0) continue;
+
+                    if (field[j + 1][i] == 1) {
+                        int x = X_START + (i + 1) * OUTLINE_SIZE + i * SQ_SIZE;
+                        int y = Y_START + (j + 1) * OUTLINE_SIZE + (j + 1) * SQ_SIZE;
+                        g.fillRect(x, y, SQ_SIZE, OUTLINE_SIZE);
+                    }
+
+                    if (field[j][i + 1] == 1) {
+                        int x = X_START + (i + 1) * OUTLINE_SIZE + (i + 1) * SQ_SIZE;
+                        int y = Y_START + (j + 1) * OUTLINE_SIZE + j * SQ_SIZE;
+                        g.fillRect(x, y, OUTLINE_SIZE, SQ_SIZE);
+                    }
+                }
+            }
+
+            g.setColor(new Color(255, 0, 0));
+            for (int i = 0; i < 9; i++) {
+                for (int j = 0; j < 9; j++) {
+                    if (type[j][i] != 1) continue;
+
+                    if (type[j + 1][i] == 1) {
+                        int x = X_START + (i + 1) * OUTLINE_SIZE + i * SQ_SIZE;
+                        int y = Y_START + (j + 1) * OUTLINE_SIZE + (j + 1) * SQ_SIZE;
+                        g.fillRect(x, y, SQ_SIZE, OUTLINE_SIZE);
+                    }
+
+                    if (type[j][i + 1] == 1) {
+                        int x = X_START + (i + 1) * OUTLINE_SIZE + (i + 1) * SQ_SIZE;
+                        int y = Y_START + (j + 1) * OUTLINE_SIZE + j * SQ_SIZE;
+                        g.fillRect(x, y, OUTLINE_SIZE, SQ_SIZE);
+                    }
                 }
             }
         }
@@ -162,23 +212,36 @@ public class ClientFrame extends JFrame implements KeyEventDispatcher {
 
     void update_event(Event e) throws IOException {
         if (e.type == Event.CONNECTED) {
-            game_started = true;
+            if (!game_started) {
+                game_started = true;
+                Event ev = new Event(Event.CONNECTED);
+                out.writeObject(ev);
+            }
         } else if (e.type == Event.DISCONNECTED) {
             disconnected = true;
         } else if (e.type == Event.NEXT_MOVE) {
+            System.out.println("MOVE");
             move_now = true;
         } else if (e.type == Event.MOVE) {
+            System.out.println("OP MOVE");
             Event ev = new Event(Event.INFO);
             int x = e.data.get(0);
             int y = e.data.get(1);
             ev.data.add(field[y][x]);
+            ev.data.add(x);
+            ev.data.add(y);
             out.writeObject(ev);
         } else if (e.type == Event.INFO) {
-            if (e.data.get(0) == 0) {
+            int res = e.data.get(0);
+            int x = e.data.get(1);
+            int y = e.data.get(2);
+            if (res == 0) {
                 Event ev = new Event(Event.NEXT_MOVE);
                 ev.data.add(0);
                 out.writeObject(ev);
+                move_now = false;
             }
+            type[y][x] = res;
         }
     }
 

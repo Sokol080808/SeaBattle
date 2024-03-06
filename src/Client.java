@@ -51,6 +51,16 @@ public class Client {
                     Event ev = (Event) in.readObject();
                     frame.update_event(ev);
                 }
+
+                if (frame.move_now) {
+                    System.out.println("X");
+                    int x = sys_in.nextInt();
+                    int y = sys_in.nextInt();
+                    Event ev = new Event(Event.MOVE);
+                    ev.data.add(x);
+                    ev.data.add(y);
+                }
+
                 frame.repaint();
             } catch (IOException exc) {
                 break;
