@@ -32,6 +32,9 @@ public class Server {
             System.out.println("user_id = " + user_id);
 
             Sender client = new Sender(socket_to_client, user_id, this);
+            users[user_id] = client;
+            client.out.write(user_id);
+            client.out.flush();
             Thread thread = new Thread(client);
             thread.start();
 
@@ -40,6 +43,7 @@ public class Server {
                 int id = r.nextInt(2);
                 Event ev = new Event(Event.NEXT_MOVE);
                 users[id].out.writeObject(ev);
+                users[id].out.flush();
                 System.out.println(id);
             }
         }

@@ -120,6 +120,7 @@ public class ClientFrame extends JFrame implements KeyEventDispatcher {
 
         Event ev = new Event(Event.CONNECTED);
         out.writeObject(ev);
+        out.flush();
 
         this.setSize(1100, 1100);
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -212,10 +213,13 @@ public class ClientFrame extends JFrame implements KeyEventDispatcher {
 
     void update_event(Event e) throws IOException {
         if (e.type == Event.CONNECTED) {
+            System.out.println("CONN");
             if (!game_started) {
                 game_started = true;
                 Event ev = new Event(Event.CONNECTED);
+                System.out.println("SENDED");
                 out.writeObject(ev);
+                out.flush();
             }
         } else if (e.type == Event.DISCONNECTED) {
             disconnected = true;
@@ -231,6 +235,7 @@ public class ClientFrame extends JFrame implements KeyEventDispatcher {
             ev.data.add(x);
             ev.data.add(y);
             out.writeObject(ev);
+            out.flush();
         } else if (e.type == Event.INFO) {
             int res = e.data.get(0);
             int x = e.data.get(1);

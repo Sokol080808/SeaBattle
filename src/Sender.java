@@ -27,9 +27,6 @@ public class Sender implements Runnable {
     public void run() {
         System.out.println("STARTED");
         try {
-            out.write(user_id);
-            out.flush();
-
             server.users[user_id] = this;
             while (!client.isClosed()) {
                 if (input.available() > 0) {
