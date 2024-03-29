@@ -8,6 +8,9 @@ public class Event implements Serializable {
     static int MOVE = 2;
     static int INFO = 3;
     static int NEXT_MOVE = 4;
+    static int READY = 5;
+    static int NOT_READY = 6;
+    static int LOSS = 7;
     int type = NOTHING;
     ArrayList<Integer> data = new ArrayList<>();
     Event() {}

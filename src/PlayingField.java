@@ -1,4 +1,5 @@
 import java.awt.*;
+import java.util.ArrayDeque;
 
 public class PlayingField {
     int X_START = 100;
@@ -6,6 +7,9 @@ public class PlayingField {
     int SQ_SIZE = 70;
     int OUTLINE_SIZE = 4;
     int FIELD_SIZE = 11 * OUTLINE_SIZE + 10 * SQ_SIZE;
+
+    int[] dx = {1, 0, -1, 0, -1, -1, 1, 1};
+    int[] dy = {0, 1, 0, -1, -1, 1, -1, 1};
     int[][] field = new int[][] {
             {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
             {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -89,6 +93,64 @@ public class PlayingField {
         }
     }
 
+    int check() {
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 10; j++) {
+                if (field[i][j] == 0) continue;
+
+                if (j + 1 < 10) {
+                    if (field[i + 1][j + 1] == 1) {
+                        return -1;
+                    }
+                }
+
+                if (0 <= j - 1) {
+                    if (field[i + 1][j - 1] == 1) {
+                        return -1;
+                    }
+                }
+            }
+        }
+
+        boolean[][] used = new boolean[10][10];
+        int[] cnt = new int[5];
+
+        for (int i = 0; i < 10; i++) {
+            for (int j = 0; j < 10; j++) {
+                if (field[i][j] == 0 || used[i][j]) continue;
+
+                ArrayDeque<Integer> q = new ArrayDeque<>();
+                used[i][j] = true;
+                q.push(i * 10 + j);
+                int sz = 0;
+                while (!q.isEmpty()) {
+                    int v = q.removeFirst();
+                    int x = v / 10;
+                    int y = v % 10;
+                    sz++;
+                    for (int k = 0; k < 4; k++) {
+                        int nx = x + dx[k];
+                        int ny = y + dy[k];
+                        if (nx < 0 || 10 <= nx || ny < 0 || 10 <= ny) continue;
+                        if (field[nx][ny] == 1 && !used[nx][ny]) {
+                            q.addLast(10 * nx + ny);
+                            used[nx][ny] = true;
+                        }
+                    }
+                }
+
+                if (sz > 4) return 0;
+                cnt[sz]++;
+            }
+        }
+
+        if (cnt[4] == 1 && cnt[3] == 2 && cnt[2] == 3 && cnt[1] == 4) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+
     Pair<Integer, Integer> getID(int event_x, int event_y) {
         Pair<Integer, Integer> res = new Pair<>(-1, -1);
         for (int i = 0; i < 10; i++) {
@@ -104,5 +166,10 @@ public class PlayingField {
         if (type[y][x] == 1) return false;
         type[y][x] = 1;
         return true;
+    }
+
+    void change(int x, int y) {
+        field[y][x] ^= 1;
+        if (check() == -1) field[y][x] ^= 1;
     }
 }

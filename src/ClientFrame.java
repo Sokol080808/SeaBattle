@@ -18,10 +18,11 @@ import java.util.Map;
 
 public class ClientFrame extends JFrame implements MouseListener, MouseMotionListener {
     boolean connected = false;
+    boolean ready = false;
     boolean game_started = false;
     boolean move_now = false;
     boolean disconnected = false;
-    int MAX_PLAYER_CNT = 2;
+    int result = 0;
     int OUR_X_START = 35;
     int OUR_Y_START = 60;
     int ENEMY_X_START = 850;
@@ -32,71 +33,20 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
     ObjectOutputStream out;
     int id;
     PlayingField our, enemy;
-
-    int[] dx = {1, 0, -1, 0};
-    int[] dy = {0, 1, 0, -1};
-
-    int check(int[][] f) {
-        for (int i = 0; i < 9; i++) {
-            for (int j = 0; j < 10; j++) {
-                if (f[i][j] == 0) continue;
-
-                if (j + 1 < 10) {
-                    if (f[i + 1][j + 1] == 1) {
-                        return -1;
-                    }
-                }
-
-                if (0 <= j - 1) {
-                    if (f[i + 1][j - 1] == 1) {
-                        return -1;
-                    }
-                }
-            }
-        }
-
-        boolean[][] used = new boolean[10][10];
-        int[] cnt = new int[5];
-
-        for (int i = 0; i < 10; i++) {
-            for (int j = 0; j < 10; j++) {
-                if (f[i][j] == 0 || used[i][j]) continue;
-
-                ArrayDeque<Integer> q = new ArrayDeque<>();
-                used[i][j] = true;
-                q.push(i * 10 + j);
-                int sz = 0;
-                while (!q.isEmpty()) {
-                    int v = q.removeFirst();
-                    int x = v / 10;
-                    int y = v % 10;
-                    sz++;
-                    for (int k = 0; k < 4; k++) {
-                        int nx = x + dx[k];
-                        int ny = y + dy[k];
-                        if (nx < 0 || 10 <= nx || ny < 0 || 10 <= ny) continue;
-                        if (f[nx][ny] == 1 && !used[nx][ny]) {
-                            q.addLast(10 * nx + ny);
-                            used[nx][ny] = true;
-                        }
-                    }
-                }
-
-                if (sz > 4) return 0;
-                cnt[sz]++;
-            }
-        }
-
-        if (cnt[4] == 1 && cnt[3] == 2 && cnt[2] == 3 && cnt[1] == 4) {
-            return 1;
-        } else {
-            return 0;
-        }
-    }
+    Button READY;
+    int READY_NOW = 0;
 
     void send(Event e) throws IOException {
         out.writeObject(e);
         out.flush();
+    }
+
+    int ALIVE_CNT = 0;
+    void startGame() {
+        this.setSize(1630, 840);
+        READY_NOW = 2;
+        ready = game_started = true;
+        ALIVE_CNT = 4 * 1 + 3 * 2 + 2 * 3 + 1 * 4;
     }
 
     ClientFrame(int id, Socket connection, ObjectOutputStream out) throws IOException {
@@ -109,24 +59,47 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
         Event ev = new Event(Event.CONNECTED);
         send(ev);
 
+        READY = new Button(930, 700, 100, 40, new ButtonAction() {
+            @Override
+            public void onClick() {
+                Event ev = new Event();
+                if (ready) {
+                    ready = false;
+                    READY_NOW--;
+                    ev.type = Event.NOT_READY;
+                } else {
+                    if (our.check() != 1) return;
+                    ready = true;
+                    READY_NOW++;
+                    if (READY_NOW == 2) startGame();
+                    ev.type = Event.READY;
+                }
+                try {
+                    send(ev);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+
         addMouseListener(this);
         addMouseMotionListener(this);
 
         our.field = new int[][] {
-                {1, 1, 0, 1, 0, 1, 0, 1, 0, 0},
-                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-                {0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
-                {0, 1, 1, 1, 1, 0, 1, 0, 0, 0},
-                {0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
-                {0, 1, 0, 0, 0, 0, 0, 0, 1, 0},
-                {0, 1, 0, 1, 0, 0, 0, 0, 1, 0},
-                {0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-                {0, 0, 0, 1, 1, 0, 0, 0, 0, 0},
-                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+            {1, 1, 0, 1, 0, 1, 0, 1, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
+            {0, 1, 1, 1, 1, 0, 1, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
+            {0, 1, 0, 0, 0, 0, 0, 0, 1, 0},
+            {0, 1, 0, 1, 0, 0, 0, 0, 1, 0},
+            {0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 1, 1, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
         };
 
         this.setTitle("Sea Battle") ;
-        this.setSize(850, 850);
+        this.setSize(840, 840);
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         this.setResizable(false);
         this.setVisible(true);
@@ -143,9 +116,18 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
         g = bufferStrategy.getDrawGraphics();
         g.clearRect(0, 0, getWidth(), getHeight());
 
-        if (!connected) {
+        if (result == -1) {
+            g.setColor(Color.BLACK);
+            g.drawString("Вы проиграли", 215, 240);
+        } else if (result == 1) {
+            g.setColor(Color.BLACK);
+            g.drawString("Вы выиграли", 220, 240);
+        } else if (!connected) {
             g.setColor(Color.BLACK);
             g.drawString("Соперник еще не подключился", 340, 390);
+        } else if (!game_started) {
+            our.paint(g);
+            READY.paint(g);
         } else {
             g.setColor(Color.BLACK);
             if (move_now) {
@@ -163,12 +145,17 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
 
     void update_event(Event e) throws IOException {
         if (e.type == Event.CONNECTED) {
-            this.setSize(1630, 840);
+            this.setSize(1200, 840);
             if (!connected) {
                 connected = true;
                 Event ev = new Event(Event.CONNECTED);
                 send(ev);
             }
+        } else if (e.type == Event.READY) {
+            READY_NOW++;
+            if (READY_NOW == 2) startGame();
+        } else if (e.type == Event.NOT_READY){
+            READY_NOW--;
         } else if (e.type == Event.DISCONNECTED) {
             disconnected = true;
         } else if (e.type == Event.NEXT_MOVE) {
@@ -182,6 +169,13 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
             ev.data.add(x);
             ev.data.add(y);
             send(ev);
+            ALIVE_CNT -= our.field[y][x];
+            if (ALIVE_CNT == 0) {
+                Event loss = new Event(Event.LOSS);
+                send(loss);
+                result = -1;
+                this.setSize(500, 500);
+            }
         } else if (e.type == Event.INFO) {
             int res = e.data.get(0);
             int x = e.data.get(1);
@@ -193,24 +187,38 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
             }
             enemy.field[y][x] = res;
             enemy.type[y][x] = 1;
+        } else if (e.type == Event.LOSS) {
+            result = 1;
+            this.setSize(500, 500);
         }
     }
 
     @Override
     public void mouseClicked(MouseEvent e) {
-        if (!move_now) return;
-        Pair<Integer, Integer> id = enemy.getID(e.getX(), e.getY());
-        if (id.x == -1 || id.y == -1) return;
+        if (!connected || result != 0) return;
 
-        if (enemy.update(id.x, id.y)) {
-            Event ev = new Event(Event.MOVE);
-            ev.data.add(id.x);
-            ev.data.add(id.y);
-            try {
-                send(ev);
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
+        if (game_started) {
+            if (!move_now) return;
+
+            Pair<Integer, Integer> id = enemy.getID(e.getX(), e.getY());
+            if (id.x == -1 || id.y == -1) return;
+
+            if (enemy.update(id.x, id.y)) {
+                Event ev = new Event(Event.MOVE);
+                ev.data.add(id.x);
+                ev.data.add(id.y);
+                try {
+                    send(ev);
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
             }
+        } else {
+            Pair<Integer, Integer> id = our.getID(e.getX(), e.getY());
+            if (id.x != -1 && id.y != -1) {
+                our.change(id.x, id.y);
+            }
+            READY.onClick(e.getX(), e.getY());
         }
     }
 
