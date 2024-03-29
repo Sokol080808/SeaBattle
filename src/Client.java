@@ -21,8 +21,6 @@ public class Client {
         InputStream input = connection.getInputStream();
         ObjectInputStream in = new ObjectInputStream(input);
 
-        KeyboardFocusManager manager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
-
         int id = in.read();
         if (id == MAX_PLAYERS_CNT) {
             connection.close();
@@ -45,13 +43,11 @@ public class Client {
 
         ClientFrame frame = new ClientFrame(id, connection, out);
 
-        manager.addKeyEventDispatcher(frame);
         while (!connection.isClosed()) {
             try {
                 while (input.available() > 0) {
                     Event ev = (Event) in.readObject();
                     frame.update_event(ev);
-                    System.out.println(frame.game_started);
                 }
 
 //                if (frame.move_now) {

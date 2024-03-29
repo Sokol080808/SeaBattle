@@ -2,6 +2,9 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -11,46 +14,24 @@ import java.net.SocketException;
 import java.sql.SQLOutput;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Map;
 
-public class ClientFrame extends JFrame implements KeyEventDispatcher {
+public class ClientFrame extends JFrame implements MouseListener, MouseMotionListener {
+    boolean connected = false;
     boolean game_started = false;
     boolean move_now = false;
     boolean disconnected = false;
     int MAX_PLAYER_CNT = 2;
-    int X_START = 100;
-    int Y_START = 100;
+    int OUR_X_START = 35;
+    int OUR_Y_START = 60;
+    int ENEMY_X_START = 850;
+    int ENEMY_Y_START = 60;
     int SQ_SIZE = 70;
     int OUTLINE_SIZE = 4;
-    int FIELD_SIZE = 11 * OUTLINE_SIZE + 10 * SQ_SIZE;
     Socket connection;
     ObjectOutputStream out;
     int id;
-
-    int[][] field = new int[][] {
-            {1, 1, 0, 1, 0, 1, 0, 1, 0, 0},
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            {0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
-            {0, 1, 1, 1, 1, 0, 1, 0, 0, 0},
-            {0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
-            {0, 1, 0, 0, 0, 0, 0, 0, 1, 0},
-            {0, 1, 0, 1, 0, 0, 0, 0, 1, 0},
-            {0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-            {0, 0, 0, 1, 1, 0, 0, 0, 0, 0},
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-    };
-
-    int [][] type = new int[][] {
-            {1, 1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {0, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-    };
+    PlayingField our, enemy;
 
     int[] dx = {1, 0, -1, 0};
     int[] dy = {0, 1, 0, -1};
@@ -74,15 +55,15 @@ public class ClientFrame extends JFrame implements KeyEventDispatcher {
             }
         }
 
-        boolean[] used = new boolean[100];
+        boolean[][] used = new boolean[10][10];
         int[] cnt = new int[5];
 
         for (int i = 0; i < 10; i++) {
             for (int j = 0; j < 10; j++) {
-                if (field[i][j] == 0 || used[10 * i + j]) continue;
+                if (f[i][j] == 0 || used[i][j]) continue;
 
                 ArrayDeque<Integer> q = new ArrayDeque<>();
-                used[10 * i + j] = true;
+                used[i][j] = true;
                 q.push(i * 10 + j);
                 int sz = 0;
                 while (!q.isEmpty()) {
@@ -94,9 +75,9 @@ public class ClientFrame extends JFrame implements KeyEventDispatcher {
                         int nx = x + dx[k];
                         int ny = y + dy[k];
                         if (nx < 0 || 10 <= nx || ny < 0 || 10 <= ny) continue;
-                        if (field[nx][ny] == 1 && !used[10 * nx + ny]) {
+                        if (f[nx][ny] == 1 && !used[nx][ny]) {
                             q.addLast(10 * nx + ny);
-                            used[10 * nx + ny] = true;
+                            used[nx][ny] = true;
                         }
                     }
                 }
@@ -113,16 +94,39 @@ public class ClientFrame extends JFrame implements KeyEventDispatcher {
         }
     }
 
+    void send(Event e) throws IOException {
+        out.writeObject(e);
+        out.flush();
+    }
+
     ClientFrame(int id, Socket connection, ObjectOutputStream out) throws IOException {
         this.id = id;
         this.out = out;
         this.connection = connection;
 
+        our = new PlayingField(OUR_X_START, OUR_Y_START, SQ_SIZE, OUTLINE_SIZE);
+        enemy = new PlayingField(ENEMY_X_START, ENEMY_Y_START, SQ_SIZE, OUTLINE_SIZE);
         Event ev = new Event(Event.CONNECTED);
-        out.writeObject(ev);
-        out.flush();
+        send(ev);
 
-        this.setSize(1100, 1100);
+        addMouseListener(this);
+        addMouseMotionListener(this);
+
+        our.field = new int[][] {
+                {1, 1, 0, 1, 0, 1, 0, 1, 0, 0},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                {0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
+                {0, 1, 1, 1, 1, 0, 1, 0, 0, 0},
+                {0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
+                {0, 1, 0, 0, 0, 0, 0, 0, 1, 0},
+                {0, 1, 0, 1, 0, 0, 0, 0, 1, 0},
+                {0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
+                {0, 0, 0, 1, 1, 0, 0, 0, 0, 0},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+        };
+
+        this.setTitle("Sea Battle") ;
+        this.setSize(850, 850);
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         this.setResizable(false);
         this.setVisible(true);
@@ -139,72 +143,18 @@ public class ClientFrame extends JFrame implements KeyEventDispatcher {
         g = bufferStrategy.getDrawGraphics();
         g.clearRect(0, 0, getWidth(), getHeight());
 
-        if (!game_started) {
+        if (!connected) {
             g.setColor(Color.BLACK);
-            g.drawString("Соперник еще не подключился", 500, 500);
+            g.drawString("Соперник еще не подключился", 340, 390);
         } else {
-            g.setColor(new Color(0, 200, 255));
-            g.fillRect(X_START, Y_START, FIELD_SIZE, FIELD_SIZE);
-            for (int i = 0; i < 10; i++) {
-                for (int j = 0; j < 10; j++) {
-                    int x = X_START + (i + 1) * OUTLINE_SIZE + i * SQ_SIZE;
-                    int y = Y_START + (j + 1) * OUTLINE_SIZE + j * SQ_SIZE;
-
-                    if (type[j][i] == 1) {
-                        g.setColor(new Color(255, 0, 0));
-                    } else if (field[j][i] == 1) {
-                        g.setColor(new Color(0, 0, 0));
-                    } else {
-                        g.setColor(new Color(180, 180, 180));
-                    }
-
-                    g.fillRect(x, y, SQ_SIZE, SQ_SIZE);
-
-                    if (type[j][i] == 0) {
-                        g.setColor(new Color(0, 0, 0));
-                        g.drawLine(x, y, x + SQ_SIZE - 1, y + SQ_SIZE - 1);
-                        g.drawLine(x, y + SQ_SIZE - 1, x + SQ_SIZE - 1, y);
-                    }
-                }
+            g.setColor(Color.BLACK);
+            if (move_now) {
+                g.drawString("Ваш ход", 35, 45);
+            } else {
+                g.drawString("Ход оппонента", 35, 45);
             }
-
-            g.setColor(new Color(0, 0, 0));
-            for (int i = 0; i < 9; i++) {
-                for (int j = 0; j < 9; j++) {
-                    if (field[j][i] == 0) continue;
-
-                    if (field[j + 1][i] == 1) {
-                        int x = X_START + (i + 1) * OUTLINE_SIZE + i * SQ_SIZE;
-                        int y = Y_START + (j + 1) * OUTLINE_SIZE + (j + 1) * SQ_SIZE;
-                        g.fillRect(x, y, SQ_SIZE, OUTLINE_SIZE);
-                    }
-
-                    if (field[j][i + 1] == 1) {
-                        int x = X_START + (i + 1) * OUTLINE_SIZE + (i + 1) * SQ_SIZE;
-                        int y = Y_START + (j + 1) * OUTLINE_SIZE + j * SQ_SIZE;
-                        g.fillRect(x, y, OUTLINE_SIZE, SQ_SIZE);
-                    }
-                }
-            }
-
-            g.setColor(new Color(255, 0, 0));
-            for (int i = 0; i < 9; i++) {
-                for (int j = 0; j < 9; j++) {
-                    if (type[j][i] != 1) continue;
-
-                    if (type[j + 1][i] == 1) {
-                        int x = X_START + (i + 1) * OUTLINE_SIZE + i * SQ_SIZE;
-                        int y = Y_START + (j + 1) * OUTLINE_SIZE + (j + 1) * SQ_SIZE;
-                        g.fillRect(x, y, SQ_SIZE, OUTLINE_SIZE);
-                    }
-
-                    if (type[j][i + 1] == 1) {
-                        int x = X_START + (i + 1) * OUTLINE_SIZE + (i + 1) * SQ_SIZE;
-                        int y = Y_START + (j + 1) * OUTLINE_SIZE + j * SQ_SIZE;
-                        g.fillRect(x, y, OUTLINE_SIZE, SQ_SIZE);
-                    }
-                }
-            }
+            our.paint(g);
+            enemy.paint(g);
         }
 
         g.dispose();
@@ -213,46 +163,84 @@ public class ClientFrame extends JFrame implements KeyEventDispatcher {
 
     void update_event(Event e) throws IOException {
         if (e.type == Event.CONNECTED) {
-            System.out.println("CONN");
-            if (!game_started) {
-                game_started = true;
+            this.setSize(1630, 840);
+            if (!connected) {
+                connected = true;
                 Event ev = new Event(Event.CONNECTED);
-                System.out.println("SENDED");
-                out.writeObject(ev);
-                out.flush();
+                send(ev);
             }
         } else if (e.type == Event.DISCONNECTED) {
             disconnected = true;
         } else if (e.type == Event.NEXT_MOVE) {
-            System.out.println("MOVE");
             move_now = true;
         } else if (e.type == Event.MOVE) {
-            System.out.println("OP MOVE");
             Event ev = new Event(Event.INFO);
             int x = e.data.get(0);
             int y = e.data.get(1);
-            ev.data.add(field[y][x]);
+            our.type[y][x] = 1;
+            ev.data.add(our.field[y][x]);
             ev.data.add(x);
             ev.data.add(y);
-            out.writeObject(ev);
-            out.flush();
+            send(ev);
         } else if (e.type == Event.INFO) {
             int res = e.data.get(0);
             int x = e.data.get(1);
             int y = e.data.get(2);
             if (res == 0) {
                 Event ev = new Event(Event.NEXT_MOVE);
-                ev.data.add(0);
-                out.writeObject(ev);
+                send(ev);
                 move_now = false;
             }
-            type[y][x] = res;
+            enemy.field[y][x] = res;
+            enemy.type[y][x] = 1;
         }
     }
 
     @Override
-    public boolean dispatchKeyEvent(KeyEvent e) {
-        System.out.println(e.getKeyCode());
-        return false;
+    public void mouseClicked(MouseEvent e) {
+        if (!move_now) return;
+        Pair<Integer, Integer> id = enemy.getID(e.getX(), e.getY());
+        if (id.x == -1 || id.y == -1) return;
+
+        if (enemy.update(id.x, id.y)) {
+            Event ev = new Event(Event.MOVE);
+            ev.data.add(id.x);
+            ev.data.add(id.y);
+            try {
+                send(ev);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+    }
+
+    @Override
+    public void mousePressed(MouseEvent e) {
+
+    }
+
+    @Override
+    public void mouseReleased(MouseEvent e) {
+
+    }
+
+    @Override
+    public void mouseEntered(MouseEvent e) {
+
+    }
+
+    @Override
+    public void mouseExited(MouseEvent e) {
+
+    }
+
+    @Override
+    public void mouseDragged(MouseEvent e) {
+
+    }
+
+    @Override
+    public void mouseMoved(MouseEvent e) {
+
     }
 }
