@@ -36,11 +36,14 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
     Button READY;
     int READY_NOW = 0;
 
+    Ship drag_now = null;
+
+    ArrayList<Ship> ships = new ArrayList<>();
+
     void send(Event e) throws IOException {
         out.writeObject(e);
         out.flush();
     }
-
     int ALIVE_CNT = 0;
     void startGame() {
         this.setSize(1630, 840);
@@ -54,12 +57,14 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
         this.out = out;
         this.connection = connection;
 
+
+
         our = new PlayingField(OUR_X_START, OUR_Y_START, SQ_SIZE, OUTLINE_SIZE);
         enemy = new PlayingField(ENEMY_X_START, ENEMY_Y_START, SQ_SIZE, OUTLINE_SIZE);
         Event ev = new Event(Event.CONNECTED);
         send(ev);
 
-        READY = new Button(930, 700, 100, 40, new ButtonAction() {
+        READY = new Button(930, 730, 100, 40, new ButtonAction() {
             @Override
             public void onClick() {
                 Event ev = new Event();
@@ -82,9 +87,6 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
             }
         });
 
-        addMouseListener(this);
-        addMouseMotionListener(this);
-
         our.field = new int[][] {
             {1, 1, 0, 1, 0, 1, 0, 1, 0, 0},
             {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -97,6 +99,28 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
             {0, 0, 0, 1, 1, 0, 0, 0, 0, 0},
             {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
         };
+
+        int SHIP_X = OUR_X_START + our.FIELD_SIZE + SQ_SIZE;
+        int SHIP_Y = OUR_Y_START;
+        for (int i = 0; i < 10; i++) {
+            if (i < 1) {
+                ships.add(new Ship(SQ_SIZE, OUTLINE_SIZE, 4, SHIP_X, SHIP_Y));
+            } else if (i < 3) {
+                ships.add(new Ship(SQ_SIZE, OUTLINE_SIZE, 3, SHIP_X, SHIP_Y));
+            } else if (i < 6) {
+                ships.add(new Ship(SQ_SIZE, OUTLINE_SIZE, 2, SHIP_X, SHIP_Y));
+            } else {
+                ships.add(new Ship(SQ_SIZE, OUTLINE_SIZE, 1, SHIP_X, SHIP_Y));
+            }
+            if (i < 6) {
+                SHIP_Y += SQ_SIZE + OUTLINE_SIZE;
+            } else {
+                SHIP_X += SQ_SIZE + OUTLINE_SIZE;
+            }
+        }
+
+        addMouseListener(this);
+        addMouseMotionListener(this);
 
         this.setTitle("Sea Battle") ;
         this.setSize(840, 840);
@@ -128,6 +152,7 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
         } else if (!game_started) {
             our.paint(g);
             READY.paint(g);
+            for (Ship ship : ships) ship.paint(g);
         } else {
             g.setColor(Color.BLACK);
             if (move_now) {
@@ -143,7 +168,7 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
         bufferStrategy.show();
     }
 
-    void update_event(Event e) throws IOException {
+    void updateEvent(Event e) throws IOException {
         if (e.type == Event.CONNECTED) {
             this.setSize(1200, 840);
             if (!connected) {
@@ -161,14 +186,22 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
         } else if (e.type == Event.NEXT_MOVE) {
             move_now = true;
         } else if (e.type == Event.MOVE) {
-            Event ev = new Event(Event.INFO);
             int x = e.data.get(0);
             int y = e.data.get(1);
             our.type[y][x] = 1;
-            ev.data.add(our.field[y][x]);
-            ev.data.add(x);
-            ev.data.add(y);
-            send(ev);
+            if (our.checkShip(x, y)) {
+                Event ev = new Event(Event.DESTROYED);
+                ev.data.add(x);
+                ev.data.add(y);
+                send(ev);
+                our.destroy(x, y);
+            } else {
+                Event ev = new Event(Event.INFO);
+                ev.data.add(our.field[y][x]);
+                ev.data.add(x);
+                ev.data.add(y);
+                send(ev);
+            }
             ALIVE_CNT -= our.field[y][x];
             if (ALIVE_CNT == 0) {
                 Event loss = new Event(Event.LOSS);
@@ -190,6 +223,11 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
         } else if (e.type == Event.LOSS) {
             result = 1;
             this.setSize(500, 500);
+        } else if (e.type == Event.DESTROYED) {
+            int x = e.data.get(0);
+            int y = e.data.get(1);
+            enemy.field[y][x] = 1;
+            enemy.destroy(x, y);
         }
     }
 
@@ -224,12 +262,29 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
 
     @Override
     public void mousePressed(MouseEvent e) {
+        if (!connected || game_started || result != 0) return;
 
+        for (Ship ship : ships) {
+            if (ship.checkHit(e.getX(), e.getY())) {
+                drag_now = ship;
+                ship.MOUSE_START_X = e.getX();
+                ship.MOUSE_START_Y = e.getY();
+            }
+        }
+
+        if (drag_now != null) our.deleteShip(drag_now);
     }
 
     @Override
     public void mouseReleased(MouseEvent e) {
+        if (!connected || game_started || result != 0 || drag_now == null) return;
 
+        our.addShip(drag_now);
+
+        drag_now = null;
+        for (Ship ship : ships) {
+            ship.normalize();
+        }
     }
 
     @Override
@@ -244,7 +299,9 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
 
     @Override
     public void mouseDragged(MouseEvent e) {
-
+        if (!connected || game_started || result != 0 || drag_now == null) return;
+        drag_now.dx = e.getX() - drag_now.MOUSE_START_X;
+        drag_now.dy = e.getY() - drag_now.MOUSE_START_Y;
     }
 
     @Override

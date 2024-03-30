@@ -11,6 +11,7 @@ public class Event implements Serializable {
     static int READY = 5;
     static int NOT_READY = 6;
     static int LOSS = 7;
+    static int DESTROYED = 8;
     int type = NOTHING;
     ArrayList<Integer> data = new ArrayList<>();
     Event() {}
