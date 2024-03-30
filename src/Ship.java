@@ -40,4 +40,33 @@ public class Ship {
     boolean checkHit(int event_x, int event_y) {
         return x <= event_x && event_x < x + w && y <= event_y && event_y < y + h;
     }
+
+    void rotate() {
+        if (type == false) {
+            w = SQ_SIZE;
+            h = SQ_SIZE * sz + OUTLINE_SIZE * (sz - 1);
+            int cur_x = x + dx;
+            for (int i = 0; i < sz; i++) {
+                cur_x += SQ_SIZE + OUTLINE_SIZE;
+                if (MOUSE_START_X + dx < cur_x) {
+                    x += i * (SQ_SIZE + OUTLINE_SIZE);
+                    y -= i * (SQ_SIZE + OUTLINE_SIZE);
+                    break;
+                }
+            }
+        } else {
+            w = SQ_SIZE * sz + OUTLINE_SIZE * (sz - 1);
+            h = SQ_SIZE;
+            int cur_y = y + dy;
+            for (int i = 0; i < sz; i++) {
+                cur_y += SQ_SIZE + OUTLINE_SIZE;
+                if (MOUSE_START_Y + dy < cur_y) {
+                    x -= i * (SQ_SIZE + OUTLINE_SIZE);
+                    y += i * (SQ_SIZE + OUTLINE_SIZE);
+                    break;
+                }
+            }
+        }
+        type = !type;
+    }
 }

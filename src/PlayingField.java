@@ -247,6 +247,11 @@ public class PlayingField {
         int OK_Y = Y_START + (id.y + 1) * OUTLINE_SIZE + id.y * SQ_SIZE;
         if (ship.type == false) {
             if (id.x + ship.sz > 10) return;
+            for (int i = 0; i < ship.sz; i++) {
+                if (field[id.y][id.x + i] == 1) {
+                    return;
+                }
+            }
 
             for (int i = 0; i < ship.sz; i++) field[id.y][id.x + i] = 1;
             if (check() != -1) {
@@ -258,6 +263,11 @@ public class PlayingField {
             }
         } else {
             if (id.y + ship.sz > 10) return;
+            for (int i = 0; i < ship.sz; i++) {
+                if (field[id.y + i][id.x] == 1) {
+                    return;
+                }
+            }
 
             for (int i = 0; i < ship.sz; i++) field[id.y + i][id.x] = 1;
             if (check() != -1) {
@@ -280,7 +290,7 @@ public class PlayingField {
                     if (ship.type == false) {
                         for (int k = 0; k < ship.sz; k++) field[j][i + k] = 0;
                     } else {
-                        for (int k = 0; k < ship.sz; k++) field[j + k][i]  = 0;
+                        for (int k = 0; k < ship.sz; k++) field[j + k][i] = 0;
                     }
                 }
             }

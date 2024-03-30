@@ -13,9 +13,9 @@ public class Server {
 
     void activate() throws IOException, InputMismatchException {
         Scanner in = new Scanner(System.in);
-//        System.out.print("INPUT PORT: ");
-//        int port = in.nextInt();
-        int port = 1239;
+        System.out.print("INPUT PORT: ");
+        int port = in.nextInt();
+//        int port = 1239;
 
         ServerSocket server = new ServerSocket(port);
         while (true) {

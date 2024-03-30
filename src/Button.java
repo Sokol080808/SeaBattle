@@ -3,13 +3,15 @@ import java.awt.*;
 public class Button {
     int x, y, w, h;
     ButtonAction action;
+    Color color;
 
-    Button(int x, int y, int w, int h, ButtonAction action) {
+    Button(int x, int y, int w, int h, Color color, ButtonAction action) {
         this.x = x;
         this.y = y;
         this.w = w;
         this.h = h;
         this.action = action;
+        this.color = color;
     }
 
     boolean checkHit(int event_x, int event_y) {
@@ -23,7 +25,7 @@ public class Button {
     }
 
     void paint(Graphics g) {
-        g.setColor(Color.GREEN);
+        g.setColor(color);
         g.fillRect(x, y, w, h);
     }
 }

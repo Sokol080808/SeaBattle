@@ -16,7 +16,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Map;
 
-public class ClientFrame extends JFrame implements MouseListener, MouseMotionListener {
+public class ClientFrame extends JFrame implements MouseListener, MouseMotionListener, KeyEventDispatcher {
     boolean connected = false;
     boolean ready = false;
     boolean game_started = false;
@@ -64,7 +64,7 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
         Event ev = new Event(Event.CONNECTED);
         send(ev);
 
-        READY = new Button(930, 730, 100, 40, new ButtonAction() {
+        READY = new Button(930, 730, 100, 40, Color.RED, new ButtonAction() {
             @Override
             public void onClick() {
                 Event ev = new Event();
@@ -72,12 +72,14 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
                     ready = false;
                     READY_NOW--;
                     ev.type = Event.NOT_READY;
+                    READY.color = Color.RED;
                 } else {
                     if (our.check() != 1) return;
                     ready = true;
                     READY_NOW++;
                     if (READY_NOW == 2) startGame();
                     ev.type = Event.READY;
+                    READY.color = Color.GREEN;
                 }
                 try {
                     send(ev);
@@ -86,19 +88,6 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
                 }
             }
         });
-
-        our.field = new int[][] {
-            {1, 1, 0, 1, 0, 1, 0, 1, 0, 0},
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            {0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
-            {0, 1, 1, 1, 1, 0, 1, 0, 0, 0},
-            {0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
-            {0, 1, 0, 0, 0, 0, 0, 0, 1, 0},
-            {0, 1, 0, 1, 0, 0, 0, 0, 1, 0},
-            {0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-            {0, 0, 0, 1, 1, 0, 0, 0, 0, 0},
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-        };
 
         int SHIP_X = OUR_X_START + our.FIELD_SIZE + SQ_SIZE;
         int SHIP_Y = OUR_Y_START;
@@ -252,10 +241,6 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
                 }
             }
         } else {
-            Pair<Integer, Integer> id = our.getID(e.getX(), e.getY());
-            if (id.x != -1 && id.y != -1) {
-                our.change(id.x, id.y);
-            }
             READY.onClick(e.getX(), e.getY());
         }
     }
@@ -307,5 +292,15 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
     @Override
     public void mouseMoved(MouseEvent e) {
 
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent e) {
+        if (e.getKeyCode() == KeyEvent.VK_R && e.getID() == KeyEvent.KEY_RELEASED) {
+            if (drag_now != null) {
+                drag_now.rotate();
+            }
+        }
+        return false;
     }
 }

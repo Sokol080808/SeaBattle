@@ -8,13 +8,13 @@ public class Client {
     public static void main(String[] args) throws IOException, ClassNotFoundException {
         Scanner sys_in = new Scanner(System.in);
         String ip;
-//        System.out.print("INPUT SERVER IP: ");
-//        ip = sys_in.next();
-//        int port;
-//        System.out.print("INPUT SERVER PORT: ");
-//        port = sys_in.nextInt();
-        ip = "localhost";
-        int port = 1239;
+        System.out.print("INPUT SERVER IP: ");
+        ip = sys_in.next();
+        int port;
+        System.out.print("INPUT SERVER PORT: ");
+        port = sys_in.nextInt();
+//        ip = "localhost";
+//        int port = 1239;
 
         Socket connection = new Socket(ip, port);
         ObjectOutputStream out = new ObjectOutputStream(connection.getOutputStream());
@@ -30,8 +30,7 @@ public class Client {
 
         Thread ShutdownHook = new Thread(() -> {
             try {
-                Event ev = new Event();
-                ev.type = Event.DISCONNECTED;
+                Event ev = new Event(Event.DISCONNECTED);
                 out.writeObject(ev);
                 out.flush();
                 connection.close();
@@ -41,7 +40,11 @@ public class Client {
         });
         Runtime.getRuntime().addShutdownHook(ShutdownHook);
 
+        KeyboardFocusManager manager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
+
         ClientFrame frame = new ClientFrame(id, connection, out);
+
+        manager.addKeyEventDispatcher(frame);
 
         while (!connection.isClosed()) {
             try {
