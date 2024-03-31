@@ -247,7 +247,7 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
 
     @Override
     public void mousePressed(MouseEvent e) {
-        if (!connected || game_started || result != 0) return;
+        if (ready || !connected || game_started || result != 0) return;
 
         for (Ship ship : ships) {
             if (ship.checkHit(e.getX(), e.getY())) {
@@ -262,7 +262,7 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
 
     @Override
     public void mouseReleased(MouseEvent e) {
-        if (!connected || game_started || result != 0 || drag_now == null) return;
+        if (ready || !connected || game_started || result != 0 || drag_now == null) return;
 
         our.addShip(drag_now);
 
@@ -284,7 +284,7 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
 
     @Override
     public void mouseDragged(MouseEvent e) {
-        if (!connected || game_started || result != 0 || drag_now == null) return;
+        if (ready || !connected || game_started || result != 0 || drag_now == null) return;
         drag_now.dx = e.getX() - drag_now.MOUSE_START_X;
         drag_now.dy = e.getY() - drag_now.MOUSE_START_Y;
     }

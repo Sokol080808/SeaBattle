@@ -163,9 +163,7 @@ public class PlayingField {
     }
 
     boolean update(int x, int y) {
-        if (type[y][x] == 1) return false;
-        type[y][x] = 1;
-        return true;
+        return type[y][x] == 0;
     }
 
     void change(int x, int y) {
