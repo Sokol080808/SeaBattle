@@ -216,6 +216,7 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
             int x = e.data.get(0);
             int y = e.data.get(1);
             enemy.field[y][x] = 1;
+            enemy.type[y][x] = 1;
             enemy.destroy(x, y);
         }
     }
