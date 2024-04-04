@@ -20,7 +20,7 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
     boolean connected = false;
     boolean ready = false;
     boolean game_started = false;
-    boolean move_now = false;
+    boolean move_now = false, can = true;
     boolean disconnected = false;
     int result = 0;
     int OUR_X_START = 35;
@@ -142,6 +142,9 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
             our.paint(g);
             READY.paint(g);
             for (Ship ship : ships) ship.paint(g);
+            g.setColor(Color.BLACK);
+            g.drawString("Перетащите корабли на игровое поле", 870, 650);
+            g.drawString("Для поворота используйте R", 900, 670);
         } else {
             g.setColor(Color.BLACK);
             if (move_now) {
@@ -199,6 +202,7 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
                 this.setSize(500, 500);
             }
         } else if (e.type == Event.INFO) {
+            can = true;
             int res = e.data.get(0);
             int x = e.data.get(1);
             int y = e.data.get(2);
@@ -213,6 +217,7 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
             result = 1;
             this.setSize(500, 500);
         } else if (e.type == Event.DESTROYED) {
+            can = true;
             int x = e.data.get(0);
             int y = e.data.get(1);
             enemy.field[y][x] = 1;
@@ -226,7 +231,7 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
         if (!connected || result != 0) return;
 
         if (game_started) {
-            if (!move_now) return;
+            if (!move_now || !can) return;
 
             Pair<Integer, Integer> id = enemy.getID(e.getX(), e.getY());
             if (id.x == -1 || id.y == -1) return;
@@ -240,6 +245,7 @@ public class ClientFrame extends JFrame implements MouseListener, MouseMotionLis
                 } catch (IOException ex) {
                     throw new RuntimeException(ex);
                 }
+                can = false;
             }
         } else {
             READY.onClick(e.getX(), e.getY());
