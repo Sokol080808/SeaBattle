@@ -293,5 +293,6 @@ public class PlayingField {
                 }
             }
         }
+        ship.added = false;
     }
 }
