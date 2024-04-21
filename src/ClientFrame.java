@@ -1,4 +1,3 @@
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
@@ -6,15 +5,9 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferStrategy;
-import java.awt.image.BufferedImage;
 import java.io.*;
-import java.lang.reflect.Field;
 import java.net.Socket;
-import java.net.SocketException;
-import java.sql.SQLOutput;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Map;
 
 public class ClientFrame extends JFrame implements MouseListener, MouseMotionListener, KeyEventDispatcher {
     boolean connected = false;
